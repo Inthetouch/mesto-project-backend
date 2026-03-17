@@ -23,7 +23,7 @@ export async function createCard(req: SessionRequest, res: Response) {
     const owner = req.user?._id;
 
     const newCard = await Card.create({ name, link, owner });
-    res.status(201).send(newCard);
+    return res.status(201).send(newCard);
   } catch (err: any) {
     if (err.name === 'ValidationError') {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
@@ -39,7 +39,7 @@ export async function deleteCard(req: Request, res: Response) {
 
     if (!card) {
       return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Карточка по указанному _id найдена' });
+        .send({ message: 'Карточка по указанному _id не найдена' });
     }
 
     return res.send({ message: 'Карточка удалена', card });
@@ -61,10 +61,10 @@ export async function likeCard(req: SessionRequest, res: Response) {
 
     if (!card) {
       return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Карточка по указанному _id найдена' });
+        .send({ message: 'Карточка по указанному _id не найдена' });
     }
 
-    res.send(card);
+    return res.send(card);
   } catch (err: any) {
     if (err.name === 'CastError') {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
