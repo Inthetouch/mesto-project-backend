@@ -4,10 +4,20 @@ import userRouter from './routes/users';
 import cardRouter from './routes/cards';
 import { SessionRequest } from './types';
 import { ERROR_CODE_NOT_FOUND } from './utils/constants';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
 
 const { PORT = 3000 } = process.env;
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+app.use(limiter);
 
 app.use(express.json());
 

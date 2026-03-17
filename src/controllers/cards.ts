@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import Card from '../models/card';
 import { SessionRequest } from '../types';
 import {
@@ -24,8 +25,8 @@ export async function createCard(req: SessionRequest, res: Response) {
 
     const newCard = await Card.create({ name, link, owner });
     return res.status(201).send(newCard);
-  } catch (err: any) {
-    if (err.name === 'ValidationError') {
+  } catch (err) {
+    if (err instanceof mongoose.Error.ValidationError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
@@ -43,8 +44,8 @@ export async function deleteCard(req: Request, res: Response) {
     }
 
     return res.send({ message: 'Карточка удалена', card });
-  } catch (err: any) {
-    if (err.name === 'CastError') {
+  } catch (err) {
+    if (err instanceof mongoose.Error.ValidationError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Передан некорректный _id карточки' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
@@ -65,8 +66,8 @@ export async function likeCard(req: SessionRequest, res: Response) {
     }
 
     return res.send(card);
-  } catch (err: any) {
-    if (err.name === 'CastError') {
+  } catch (err) {
+    if (err instanceof mongoose.Error.ValidationError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
@@ -87,8 +88,8 @@ export async function dislikeCard(req: SessionRequest, res: Response) {
     }
 
     return res.send(card);
-  } catch (err: any) {
-    if (err.name === 'CastError') {
+  } catch (err) {
+    if (err instanceof mongoose.Error.ValidationError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для снятия лайка' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
