@@ -35,7 +35,7 @@ export async function createCard(req: SessionRequest, res: Response) {
 export async function deleteCard(req: Request, res: Response) {
   try {
     const { cardId } = req.params;
-    const card = await Card.findById(cardId);
+    const card = await Card.findByIdAndDelete(cardId);
 
     if (!card) {
       return res.status(ERROR_CODE_NOT_FOUND)
