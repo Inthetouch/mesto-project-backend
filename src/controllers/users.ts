@@ -26,13 +26,13 @@ export async function getUserById(req: Request, res: Response) {
 
     if (!user) {
       return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Пользователь по указанному _id найден' });
+        .send({ message: 'Пользователь по указанному _id не найден' });
     }
 
     return res.send(user);
   } catch (err) {
-    if (err instanceof mongoose.Error.ValidationError) {
-      res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Передан некорректный _id пользователя' });
+    if (err instanceof mongoose.Error.CastError) {
+      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Передан некорректный _id пользователя' });
     }
 
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
@@ -46,7 +46,7 @@ export async function createUser(req: Request, res: Response) {
     return res.status(201).send(newUser);
   } catch (err) {
     if (err instanceof mongoose.Error.ValidationError) {
-      res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
+      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
   }

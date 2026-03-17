@@ -45,7 +45,7 @@ export async function deleteCard(req: Request, res: Response) {
 
     return res.send({ message: 'Карточка удалена', card });
   } catch (err) {
-    if (err instanceof mongoose.Error.ValidationError) {
+    if (err instanceof mongoose.Error.CastError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Передан некорректный _id карточки' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
@@ -67,7 +67,7 @@ export async function likeCard(req: SessionRequest, res: Response) {
 
     return res.send(card);
   } catch (err) {
-    if (err instanceof mongoose.Error.ValidationError) {
+    if (err instanceof mongoose.Error.CastError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
@@ -89,7 +89,7 @@ export async function dislikeCard(req: SessionRequest, res: Response) {
 
     return res.send(card);
   } catch (err) {
-    if (err instanceof mongoose.Error.ValidationError) {
+    if (err instanceof mongoose.Error.CastError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для снятия лайка' });
     }
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
