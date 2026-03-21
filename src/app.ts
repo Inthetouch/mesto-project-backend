@@ -1,13 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
+import rateLimit from 'express-rate-limit';
 import userRouter from './routes/users';
 import cardRouter from './routes/cards';
-import { SessionRequest } from './types';
+import auth from 'middlewares/auth';
+import { createUser, login } from 'controllers/users';
 import { ERROR_CODE_NOT_FOUND } from './utils/constants';
-import rateLimit from 'express-rate-limit';
+
 
 const app = express();
-
 const { PORT = 3000 } = process.env;
 
 const limiter = rateLimit({
@@ -15,18 +16,15 @@ const limiter = rateLimit({
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-})
+});
 
 app.use(limiter);
-
 app.use(express.json());
 
-app.use((req: SessionRequest, res: Response, next: NextFunction) => {
-  req.user = {
-    _id: '69b85ba05af0d8680be5b276'
-  };
-  next();
-});
+app.post('/signin', login);
+app.post('/signup', createUser);
+
+app.use(auth);
 
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);

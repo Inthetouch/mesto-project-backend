@@ -142,3 +142,15 @@ export async function login(req: Request, res: Response) {
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
   }
 }
+
+export async function getCurrentUser(req: SessionRequest, res: Response) {
+  try {
+    const user = await User.findById(req.user?._id);
+    if (!user) {
+      return res.status(ERROR_CODE_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден' });
+    }
+    return res.send(user);
+  } catch (err) {
+    return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
+  }
+}
