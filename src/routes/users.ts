@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { validateId, validateUpdateProfile, validateUpdateAvatar } from '../utils/validation';
 import {
   getUsers, getUserById, updateProfile,
   updateAvatar, getCurrentUser,
@@ -8,9 +9,9 @@ const router = Router();
 
 router.get('/', getUsers);
 router.get('/me', getCurrentUser);
-router.patch('/me', updateProfile);
-router.patch('/me/avatar', updateAvatar);
+router.patch('/me', validateUpdateProfile, updateProfile);
+router.patch('/me/avatar', validateUpdateAvatar, updateAvatar);
 
-router.get('/:userId', getUserById);
+router.get('/:userId', validateId, getUserById);
 
 export default router;

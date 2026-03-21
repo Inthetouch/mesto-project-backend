@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { ERROR_CODE_INTERNAL_SERVER_ERROR } from '../utils/constants';
 
 interface ICustomError extends Error {
   statusCode?: number;
@@ -7,13 +8,13 @@ interface ICustomError extends Error {
 function errorHandler(err: unknown, req: Request, res: Response, next: NextFunction) {
   if (err instanceof Error) {
     const customError = err as ICustomError;
-    const statusCode = customError.statusCode || 500;
-    const message = statusCode === 500 ? 'На сервере произошла ошибка' : customError.message;
+    const statusCode = customError.statusCode || ERROR_CODE_INTERNAL_SERVER_ERROR;
+    const message = statusCode === ERROR_CODE_INTERNAL_SERVER_ERROR ? 'На сервере произошла ошибка' : customError.message;
     res.status(statusCode).send({ message });
     return next();
   }
 
-  res.status(500).send({ message: 'На сервере произошла ошибка' });
+  res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
   return next();
 }
 

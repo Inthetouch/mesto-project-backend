@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
+import { validateCreateUser, validateLogin } from './utils/validation';
 import userRouter from './routes/users';
 import cardRouter from './routes/cards';
 import auth from './middlewares/auth';
@@ -25,8 +26,8 @@ app.use(express.json());
 
 app.use(requestLogger);
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', validateLogin, login);
+app.post('/signup', validateCreateUser, createUser);
 
 app.use(auth);
 
