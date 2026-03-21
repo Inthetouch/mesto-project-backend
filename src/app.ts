@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import userRouter from './routes/users';
 import cardRouter from './routes/cards';
-import auth from 'middlewares/auth';
-import { createUser, login } from 'controllers/users';
+import auth from './middlewares/auth';
+import { createUser, login } from './controllers/users';
 import { ERROR_CODE_NOT_FOUND } from './utils/constants';
 
 

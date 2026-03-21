@@ -6,6 +6,7 @@ import {
   ERROR_CODE_BAD_REQUEST,
   ERROR_CODE_NOT_FOUND,
   ERROR_CODE_INTERNAL_SERVER_ERROR,
+  ERROR_CODE_FORBIDDEN,
 } from '../utils/constants';
 
 export async function getCards(req: Request, res: Response) {
@@ -33,15 +34,21 @@ export async function createCard(req: SessionRequest, res: Response) {
   }
 }
 
-export async function deleteCard(req: Request, res: Response) {
+export async function deleteCard(req: SessionRequest, res: Response) {
   try {
     const { cardId } = req.params;
-    const card = await Card.findByIdAndDelete(cardId);
+    const card = await Card.findById(cardId);
 
     if (!card) {
       return res.status(ERROR_CODE_NOT_FOUND)
         .send({ message: 'Карточка по указанному _id не найдена' });
     }
+
+    if (card.owner.toString() !== req.user?._id) {
+      return res.status(ERROR_CODE_FORBIDDEN).send({ message: 'У вас нет прав на удаление чужой карточки' });
+    }
+
+    await card.deleteOne();
 
     return res.send({ message: 'Карточка удалена', card });
   } catch (err) {
