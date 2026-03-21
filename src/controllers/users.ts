@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { SessionRequest } from '../types/index';
 import User from '../models/user';
 import {
   ERROR_CODE_BAD_REQUEST,
+  ERROR_CODE_CONFLICT,
+  ERROR_CODE_UNAUTHORIZED,
   ERROR_CODE_NOT_FOUND,
   ERROR_CODE_INTERNAL_SERVER_ERROR,
 } from '../utils/constants';
@@ -41,10 +45,24 @@ export async function getUserById(req: Request, res: Response) {
 
 export async function createUser(req: Request, res: Response) {
   try {
-    const { name, about, avatar } = req.body;
-    const newUser = await User.create({ name, about, avatar });
-    return res.status(201).send(newUser);
+    const {
+      name, about, avatar, email, password,
+    } = req.body;
+    const hashPassword = await bcrypt.hash(password, 10);
+    const newUser = await User.create({
+      name, about, avatar, email, password: hashPassword,
+    });
+    return res.status(201).send({
+      _id: newUser._id,
+      name: newUser.name,
+      about: newUser.about,
+      avatar: newUser.avatar,
+      email: newUser.email,
+    });
   } catch (err) {
+    if (err instanceof mongoose.mongo.MongoServerError && err.code === 11000) {
+      return res.status(ERROR_CODE_CONFLICT).send({ message: 'Пользователь с таким email уже зарегистрирован' });
+    }
     if (err instanceof mongoose.Error.ValidationError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
     }
@@ -100,6 +118,27 @@ export async function updateAvatar(req: SessionRequest, res: Response) {
     if (err instanceof mongoose.Error.ValidationError) {
       return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара' });
     }
+    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+  }
+}
+
+export async function login(req: Request, res: Response) {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email }).select('+password');
+
+    if (!user) {
+      return res.status(ERROR_CODE_UNAUTHORIZED).send({ message: 'Неправильные почта или пароль' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password as string);
+    if (!isPasswordValid) {
+      return res.status(ERROR_CODE_UNAUTHORIZED).send({ message: 'Неправильные почта или пароль' });
+    }
+
+    const token = jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' });
+    return res.send({ token });
+  } catch (err) {
     return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
   }
 }
