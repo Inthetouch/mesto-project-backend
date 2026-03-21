@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { validateId, validateUpdateProfile, validateUpdateAvatar } from '../utils/validation';
+import { validateUserId, validateUpdateProfile, validateUpdateAvatar } from '../utils/validation';
 import {
   getUsers, getUserById, updateProfile,
   updateAvatar, getCurrentUser,
@@ -12,6 +12,6 @@ router.get('/me', getCurrentUser);
 router.patch('/me', validateUpdateProfile, updateProfile);
 router.patch('/me/avatar', validateUpdateAvatar, updateAvatar);
 
-router.get('/:userId', validateId, getUserById);
+router.get('/:userId', validateUserId, getUserById);
 
 export default router;

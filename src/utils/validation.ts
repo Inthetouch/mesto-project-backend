@@ -19,10 +19,15 @@ export const validateLogin = celebrate({
   }),
 });
 
-export const validateId = celebrate({
+export const validateCardId = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().hex().length(24),
-    cardId: Joi.string().hex().length(24),
+    cardId: Joi.string().required().hex().length(24),
+  }),
+});
+
+export const validateUserId = celebrate({
+  params: Joi.object().keys({
+    userId: Joi.string().required().hex().length(24),
   }),
 });
 

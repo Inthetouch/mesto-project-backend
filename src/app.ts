@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
+import { errors } from 'celebrate';
 import { validateCreateUser, validateLogin } from './utils/validation';
 import userRouter from './routes/users';
 import cardRouter from './routes/cards';
@@ -39,6 +40,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 app.use(errorLogger);
+app.use(errors());
 app.use(errorHandler);
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb')
