@@ -1,25 +1,21 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Card from '../models/card';
 import { SessionRequest } from '../types';
-import {
-  ERROR_CODE_BAD_REQUEST,
-  ERROR_CODE_NOT_FOUND,
-  ERROR_CODE_INTERNAL_SERVER_ERROR,
-  ERROR_CODE_FORBIDDEN,
-} from '../utils/constants';
+import BadRequestError from '../errors/bad-request-error';
+import NotFoundError from '../errors/not-found-error';
+import ForbiddenError from '../errors/forbidden-error';
 
-export async function getCards(req: Request, res: Response) {
+export async function getCards(req: Request, res: Response, next: NextFunction) {
   try {
     const cards = await Card.find({});
-    res.send(cards);
+    return res.send(cards);
   } catch (err) {
-    res.status(ERROR_CODE_INTERNAL_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function createCard(req: SessionRequest, res: Response) {
+export async function createCard(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const { name, link } = req.body;
     const owner = req.user?._id;
@@ -28,24 +24,23 @@ export async function createCard(req: SessionRequest, res: Response) {
     return res.status(201).send(newCard);
   } catch (err) {
     if (err instanceof mongoose.Error.ValidationError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании карточки' });
+      return next(new BadRequestError('Переданы некорректные данные при создании карточки'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function deleteCard(req: SessionRequest, res: Response) {
+export async function deleteCard(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const { cardId } = req.params;
     const card = await Card.findById(cardId);
 
     if (!card) {
-      return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Карточка по указанному _id не найдена' });
+      return next(new NotFoundError('Карточка по указанному _id не найдена'));
     }
 
     if (card.owner.toString() !== req.user?._id) {
-      return res.status(ERROR_CODE_FORBIDDEN).send({ message: 'У вас нет прав на удаление чужой карточки' });
+      return next(new ForbiddenError('У вас нет прав на удаление чужой карточки'));
     }
 
     await card.deleteOne();
@@ -53,13 +48,13 @@ export async function deleteCard(req: SessionRequest, res: Response) {
     return res.send({ message: 'Карточка удалена', card });
   } catch (err) {
     if (err instanceof mongoose.Error.CastError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Передан некорректный _id карточки' });
+      return next(new BadRequestError('Передан некорректный _id карточки'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function likeCard(req: SessionRequest, res: Response) {
+export async function likeCard(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -68,20 +63,19 @@ export async function likeCard(req: SessionRequest, res: Response) {
     );
 
     if (!card) {
-      return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Карточка по указанному _id не найдена' });
+      return next(new NotFoundError('Карточка по указанному _id не найдена'));
     }
 
     return res.send(card);
   } catch (err) {
     if (err instanceof mongoose.Error.CastError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для постановки лайка' });
+      return next(new BadRequestError('Переданы некорректные данные для постановки лайка'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function dislikeCard(req: SessionRequest, res: Response) {
+export async function dislikeCard(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const card = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -90,15 +84,14 @@ export async function dislikeCard(req: SessionRequest, res: Response) {
     );
 
     if (!card) {
-      return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Передан несуществующий _id карточки' });
+      return next(new NotFoundError('Передан несуществующий _id карточки'));
     }
 
     return res.send(card);
   } catch (err) {
     if (err instanceof mongoose.Error.CastError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные для снятия лайка' });
+      return next(new BadRequestError('Переданы некорректные данные для снятия лайка'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
