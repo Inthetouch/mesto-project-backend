@@ -1,49 +1,44 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { SessionRequest } from '../types/index';
 import User from '../models/user';
-import {
-  ERROR_CODE_BAD_REQUEST,
-  ERROR_CODE_CONFLICT,
-  ERROR_CODE_UNAUTHORIZED,
-  ERROR_CODE_NOT_FOUND,
-  ERROR_CODE_INTERNAL_SERVER_ERROR,
-} from '../utils/constants';
+import ConflictError from '../errors/conflict-error';
+import BadRequestError from '../errors/bad-request-error';
+import NotFoundError from '../errors/not-found-error';
+import UnauthorizedError from '../errors/unauthorized-error';
 
-export async function getUsers(req: Request, res: Response) {
+export async function getUsers(req: Request, res: Response, next: NextFunction) {
   try {
     const users = await User.find({});
-    res.send(users);
+    return res.send(users);
   } catch (err) {
-    res.status(ERROR_CODE_INTERNAL_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function getUserById(req: Request, res: Response) {
+export async function getUserById(req: Request, res: Response, next: NextFunction) {
   try {
     const { userId } = req.params;
 
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(ERROR_CODE_NOT_FOUND)
-        .send({ message: 'Пользователь по указанному _id не найден' });
+      return next(new NotFoundError('Пользователь по указанному _id не найден'));
     }
 
     return res.send(user);
   } catch (err) {
     if (err instanceof mongoose.Error.CastError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Передан некорректный _id пользователя' });
+      return next(new BadRequestError('Передан некорректный _id пользователя'));
     }
 
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function createUser(req: Request, res: Response) {
+export async function createUser(req: Request, res: Response, next: NextFunction) {
   try {
     const {
       name, about, avatar, email, password,
@@ -61,16 +56,16 @@ export async function createUser(req: Request, res: Response) {
     });
   } catch (err) {
     if (err instanceof mongoose.mongo.MongoServerError && err.code === 11000) {
-      return res.status(ERROR_CODE_CONFLICT).send({ message: 'Пользователь с таким email уже зарегистрирован' });
+      return next(new ConflictError('Пользователь с таким email уже существует'));
     }
     if (err instanceof mongoose.Error.ValidationError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при создании пользователя' });
+      return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function updateProfile(req: SessionRequest, res: Response) {
+export async function updateProfile(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const { name, about } = req.body;
 
@@ -84,19 +79,19 @@ export async function updateProfile(req: SessionRequest, res: Response) {
     );
 
     if (!user) {
-      return res.status(ERROR_CODE_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден' });
+      return next(new NotFoundError('Пользователь с указанным _id не найден'));
     }
 
     return res.send(user);
   } catch (err) {
     if (err instanceof mongoose.Error.ValidationError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении профиля' });
+      return next(new BadRequestError('Переданы некорректные данные при обновлении профиля'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function updateAvatar(req: SessionRequest, res: Response) {
+export async function updateAvatar(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const { avatar } = req.body;
 
@@ -110,47 +105,47 @@ export async function updateAvatar(req: SessionRequest, res: Response) {
     );
 
     if (!user) {
-      return res.status(ERROR_CODE_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден' });
+      return next(new NotFoundError('Пользователь с указанным _id не найден'));
     }
 
     return res.send(user);
   } catch (err) {
     if (err instanceof mongoose.Error.ValidationError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные при обновлении аватара' });
+      return next(new BadRequestError('Переданы некорректные данные при обновлении аватара'));
     }
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function login(req: Request, res: Response) {
+export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
-      return res.status(ERROR_CODE_UNAUTHORIZED).send({ message: 'Неправильные почта или пароль' });
+      return next(new UnauthorizedError('Неправильные почта или пароль'));
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password as string);
     if (!isPasswordValid) {
-      return res.status(ERROR_CODE_UNAUTHORIZED).send({ message: 'Неправильные почта или пароль' });
+      return next(new UnauthorizedError('Неправильные почта или пароль'));
     }
 
     const token = jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' });
     return res.send({ token });
   } catch (err) {
-    return res.status(ERROR_CODE_INTERNAL_SERVER_ERROR).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 }
 
-export async function getCurrentUser(req: SessionRequest, res: Response) {
+export async function getCurrentUser(req: SessionRequest, res: Response, next: NextFunction) {
   try {
     const user = await User.findById(req.user?._id);
     if (!user) {
-      return res.status(ERROR_CODE_NOT_FOUND).send({ message: 'Пользователь с указанным _id не найден' });
+      return next(new NotFoundError('Пользователь с указанным _id не найден'));
     }
     return res.send(user);
   } catch (err) {
-    return res.status(ERROR_CODE_BAD_REQUEST).send({ message: 'Переданы некорректные данные' });
+    return next(new BadRequestError('Переданы некорректные данные'));
   }
 }

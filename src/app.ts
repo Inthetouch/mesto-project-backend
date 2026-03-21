@@ -5,7 +5,9 @@ import userRouter from './routes/users';
 import cardRouter from './routes/cards';
 import auth from './middlewares/auth';
 import { createUser, login } from './controllers/users';
-import { ERROR_CODE_NOT_FOUND } from './utils/constants';
+import { requestLogger, errorLogger } from './middlewares/logger';
+import errorHandler from './middlewares/error-handler';
+import NotFoundError from './errors/not-found-error';
 
 
 const app = express();
@@ -21,6 +23,8 @@ const limiter = rateLimit({
 app.use(limiter);
 app.use(express.json());
 
+app.use(requestLogger);
+
 app.post('/signin', login);
 app.post('/signup', createUser);
 
@@ -29,9 +33,12 @@ app.use(auth);
 app.use('/users', userRouter);
 app.use('/cards', cardRouter);
 
-app.use((req: Request, res: Response) => {
-  res.status(ERROR_CODE_NOT_FOUND).send({ message: 'Запрашиваемый ресурс не найден' });
+app.use((req: Request, res: Response, next: NextFunction) => {
+  next(new NotFoundError('Запрашиваемый ресурс не найден'));
 });
+
+app.use(errorLogger);
+app.use(errorHandler);
 
 mongoose.connect('mongodb://127.0.0.1:27017/mestodb')
   .then(() => console.log('Успешное подключение к MongoDB'))
